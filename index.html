@@ -1,1 +1,382 @@
-hello
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SNAKE</title>
+    </head>
+    <body>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <canvas id="canvas" width="2000" height="630"></canvas>
+        </div>
+        <select name="snake color" onfocus="onSelectFocus()" onchange="onSelectedColorChange(this)">
+            <option value="red">red</option>
+            <option value="orange">orange</option>
+            <option value="yellow">yellow</option>
+            <option value="green" selected="true">green</option>
+            <option value="blue">blue</option>
+            <option value="purple">purple</option>
+            <option value="brown">brown</option>
+            <option value="pink">pink </option>
+            <option value="#eeeeee">very very very very light gray </option>
+        </select>
+        <audio loop id="audio">
+            <source src="tetris.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        <script>
+            function onSelectedColorChange(selectObject) {
+                game.color = selectObject.value;
+                game.paused = false;
+            }
+
+            function onSelectFocus() {
+                game.paused = true;
+            }
+
+            function startGame() {
+                gameControl.startGame();
+            }
+            var game = { 
+                tickNumber: 0,
+                timer: null,
+                paused: false,
+                stopped: true,
+                millisecondsBetweenTicks: 500,
+                score: 0,
+                color: 'green',
+                board: null,
+                board0: [
+                    "#################################################################",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#           ############           #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#           ############           #                            #",
+                    "#           ############           #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#           ############           #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "#                                  #                            #",
+                    "############# ################################# #################",
+                    "############# ################################# #################",
+                    "#############                                   #################",
+                    "#################################################################"
+
+
+
+                ],
+                board1: [
+                    "################################################################",
+                    "#                                                               #",
+                    "#                                                               #",
+                    "#                                                               #",
+                    "#                                                               #",
+                    "#                                                               #",
+                    "#                   ##################                          #",
+                    "#                   #                #                          #",
+                    "#                   #                #                          #",
+                    "#                   #                #                          #",
+                    "#                   #                #                          #",
+                    "#                   #########*########                          #",
+                    "#                                                               #",
+                    "#                                                               #",
+                    "#                            #                                  #",
+                    "#                                                               #",
+                    "#                                                               #",
+                    "#################################################################"
+
+                    
+                ],
+                board2: [
+                    "################################################################",
+                    "#                                                              #",
+                    "#                                                              #",
+                    "################### ############################################",
+                    "#                                                              #",
+                    "#                                                              #",
+                    "########################################## #####################",
+                    "#                                                              #",
+                    "#                                                              #",
+                    "############################ ###################################",
+                    "#                                                              #",
+                    "#                                                              #",
+                    "######################################################### ######",
+                    "#                                                              #",
+                    "#                       #################                      #",
+                    "#                                                              #",
+                    "################################################################"
+
+
+                    
+                   
+                ],
+                board3: [
+                    "#################################################################",
+                    "#                              #                                #",
+                    "#                              #                                #",
+                    "#                              #                                #",
+                    "#           #####  #####       #                                #",
+                    "#                              #                                #",
+                    "#                              #                                #",
+                    "#                              #                                #",
+                    "#           ####### ####       #                                #",
+                    "#           ## #########       #                                #",
+                    "#                              #                                #",
+                    "#                     #        *                                #",
+                    "#                              #                                #",
+                    "#           #####  #####       #                                #",
+                    "#                              #                                #",
+                    "#                              #                                #",
+                    "#                              #                                #",
+                    "#################################################################"
+                    
+
+
+                ],
+                fruit: [],
+                tick: function() {
+                    window.clearTimeout(game.timer);
+                    if (!game.paused) {
+                        game.tickNumber++;
+                        if(game.tickNumber % 16 == 0) {
+                            game.addRandomFruit(1);
+                        }
+                        if(game.tickNumber % 37 == 0) {
+                            game.addRandomFruit(2);
+                        }
+                        if(game.tickNumber % 53 == 0) {
+                            game.addRandomFruit(-1);
+                        }
+                        var result = snake.move();
+                        if(result == "gameover") {
+                            document.getElementById('audio').pause();
+                            game.stopped = true;
+                            alert(`GAME OVER! click the reload button to play again. You scored ${game.score}`);
+                            return;
+                        }
+                        graphics.drawGame();
+                        if (game.tickNumber % 100) {
+                            game.millisecondsBetweenTicks -=(game.millisecondsBetweenTicks * 0);
+                        }
+                    }
+                    game.timer = window.setTimeout("game.tick()", game.millisecondsBetweenTicks);
+                },
+                addRandomFruit: function(pointValue) {
+                    var randomY = Math.floor(Math.random() * game.board.length) + 0;
+                    var randomX = Math.floor(Math.random() * game.board[randomY].length) + 0;
+                    var fruit = {
+                        location: { x: randomX, y: randomY},
+                        pointValue: pointValue
+                    };
+                    if(game.isEmpty(fruit.location) && !game.isFruit(fruit.location)) {
+                        game.fruit.push(fruit);
+                    }
+                },
+                isEmpty: function(location) {
+                    var contents = game.board[location.y][location.x];
+                    return [' ', '*'].includes(contents);
+                },
+                isDoor: function(location) {
+                    var contents = game.board[location.y][location.x];
+                    return contents == '*'
+                },
+                isWall: function(location) {
+                    var contents = game.board[location.y][location.x];
+                    return contents == '#';
+                },
+                isFruit: function(location) {
+                    for(var fruitNumber = 0; fruitNumber < game.fruit.length; fruitNumber++) {
+                        var fruit = game.fruit[fruitNumber];
+                        if(location.x == fruit.location.x && location.y == fruit.location.y) {
+                            game.fruit.splice(fruitNumber, 1);
+                            return fruit;
+                        }
+                    }
+                    return false;  
+                },
+                isSnake: function(location) {
+                    for(var snakePart = 0; snakePart < snake.parts.length; snakePart++) {
+                        var part = snake.parts[snakePart];
+                        if(location.x == part.x && location.y == part.y) {
+                            return true;
+                        }
+                    }
+                    return false;
+                },
+                pickNewBoard: function() {
+                    var boardNumber = Math.floor(Math.random() * 4);
+                    game.board = game['board' + boardNumber];
+                }
+            };
+            var snake = {
+                parts: [
+                    {x: 13, y: 2},
+                    {x: 12, y: 2},
+                    {x: 11, y: 2},
+                    {x: 10, y: 2},
+                    {x: 9, y: 2},
+                    {x: 8, y: 2},
+                    {x: 7, y: 2},
+                    {x: 6, y: 2},
+                    {x: 5, y: 2},
+                    {x: 4, y: 2},
+                    {x: 3, y: 2},
+                    {x: 2, y: 2},
+
+                ],
+                extraGrowAmount: 0,
+                facing: "E",
+                nextLocation: function() {
+                    if(snake.parts.length < 1) {
+                        return null;
+                    }
+                    var snakeHead = snake.parts[0];
+                    var targetX = snakeHead.x;
+                    var targetY = snakeHead.y;
+                    targetY = snake.facing == "N" ? targetY-1 : targetY;
+                    targetY = snake.facing == "S" ? targetY+1 : targetY;
+                    targetX = snake.facing == "W" ? targetX-1 : targetX;
+                    targetX = snake.facing == "E" ? targetX+1 : targetX;
+                    return {x: targetX, y: targetY};
+                    },
+                move: function() {
+                    var location = snake.nextLocation();
+                    if(location === null || game.isWall(location) || game.isSnake(location)) {
+                        return "gameover";
+                    }
+                    if(game.isEmpty(location)) {
+                        snake.parts.unshift(location);
+                        if(snake.extraGrowAmount === 0 ) {
+                            snake.parts.pop();
+                        } else {
+                            snake.extraGrowAmount -= 1;
+                        }
+                    }
+                    if(fruit = game.isFruit(location)) {
+                        fruitValue = fruit.pointValue;
+                        snake.parts.unshift(location);
+                        game.score += fruitValue;
+                        if (fruitValue === -1) {
+                            snake.parts.pop();
+                            snake.parts.pop();
+                        } else {
+                            snake.extraGrowAmount = fruitValue - 1;
+                        }
+                    }
+                    
+                }
+            };
+            var graphics = {
+                canvas: document.getElementById("canvas"),
+                squareSize: 30,
+                drawBoard: function(cxt) {
+                    var ctx = graphics.canvas.getContext("2d");
+                    var currentYoffset = 0;
+                    game.board.forEach(function checkLine(line) {
+                        line = line.split('');
+                        line.forEach(function checkCharacter(character, index) {
+                            if(character == '#') {
+                                ctx.fillStyle = "black";
+                                var currentXoffset = index * graphics.squareSize;
+                                ctx.fillRect(currentXoffset, currentYoffset, graphics.squareSize, graphics.squareSize);
+                            }
+                            if(character == '*') {
+                                ctx.fillStyle = "black";
+                                var currentXoffset = index * graphics.squareSize;
+                                ctx.fillRect(currentXoffset, currentYoffset, graphics.squareSize, graphics.squareSize);   
+                            }
+                        });
+                        currentYoffset += graphics.squareSize;
+
+                    });
+                },
+                draw: function(ctx, source, color) {
+                    source.forEach(function(part) {
+                        var partXlocation = part.x * graphics.squareSize
+                        var partYlocation = part.y * graphics.squareSize
+                        ctx.fillStyle = color;
+                        ctx.fillRect(partXlocation, partYlocation, graphics.squareSize, graphics.squareSize);
+                    });
+                },
+                drawGame: function() {
+                    var ctx  = graphics.canvas.getContext("2d");
+                    ctx.clearRect(0, 0, graphics.canvas.width, graphics.canvas.height)
+                    graphics.drawBoard(ctx);
+                    if (game.fruit.length > 0) {
+                        pointValues = [...new Set(game.fruit.map(fruit => fruit.pointValue))]
+                        pointValues.forEach(pointValue => {
+                            locations = game.fruit.filter(fruit => fruit.pointValue === pointValue).map(fruit => fruit.location);
+                            color = 'red';
+                            if (pointValue === 2) {
+                                color = 'purple';
+                            } else if (pointValue < 1) {
+                                color = 'brown';
+                            }
+                            graphics.draw(ctx, locations, color);
+                        });
+                        FruitLocations = game.fruit.filter(fruit => fruit.pointValue === 1).map(fruit => fruit.location);
+                        purpleFruitLocations = game.fruit.filter(fruit => fruit.pointValue === 2).map(fruit => fruit.location);
+
+                        if (purpleFruitLocations.length) {
+                            graphics.draw(ctx, purpleFruitLocations, 'purple');
+                        }
+                    }
+
+                    graphics.draw(ctx, snake.parts.slice(1), game.color);
+
+                    graphics.draw(ctx, [snake.parts[0]], game.color);
+                }
+            };
+            game.pickNewBoard();
+            graphics.drawGame();
+            var gameControl = {
+                processInput: function(keyDown){
+
+                    if(game.stopped === true) {
+                        return
+                    }
+
+                    keyDown.preventDefault();
+
+                    document.getElementById('audio').play();
+                    var keyCode = keyDown.keyCode;
+
+
+                    var targetDirection = snake.facing;
+                    if(keyCode == "38" && snake.facing != "S") targetDirection = "N"
+                    if(keyCode == "37" && snake.facing != "E") targetDirection = "W"
+                    if(keyCode == "40" && snake.facing != "N") targetDirection = "S"
+                    if(keyCode == "39" && snake.facing != "W") targetDirection = "E"
+
+                    if(keyCode == "80") game.paused = !game.paused;
+
+                    if(keyCode == "72") {
+                        
+                        game.score += 200000000000000;
+                    }
+                    if(keyCode == "16") {
+                        alert("Hooray!!! you found the secret keycode. if you press the 'H' key it will give you lots of points")
+                    }
+
+
+                    snake.facing = targetDirection;
+                    game.tick();
+                },
+                startGame: function () {
+                    window.addEventListener("keydown", gameControl.processInput, false);
+                    var boardNumber = Math.floor(Math.random() * 4);
+                    game.board = game['board' + boardNumber];
+                    game.stopped = false;
+                    game.tick();
+                }
+
+            };
+            gameControl.startGame()
+        </script>
+    </body>
+</html>             
