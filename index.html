@@ -23,6 +23,7 @@
             Your browser does not support the audio element.
         </audio>
         <script>
+            function play() {
             function onSelectedColorChange(selectObject) {
                 game.color = selectObject.value;
                 game.paused = false;
@@ -367,6 +368,7 @@
 
             };
             gameControl.startGame()
+        }
         </script>
     </body>
 </html>             
